@@ -43,19 +43,19 @@ BOOLEAN kLoopy = TRUE;
 BOOLEAN kDebugDetermineValue = FALSE;
 void* gGameSpecificTclInit = NULL;
 
-CONST_STRING kHelpGraphicInterface = "";
+CONST_STRING kHelpGraphicInterface = "On each turn, move a piece (orthogonally or diagonally) to an empty spot one tile away.\nYou may jump over an enemy counter (no jumps over your own counters), landing on an empty spot two tiles away.\nEvery move/jump must be forwards or sideways relative to your side, never backwards.";
 
-CONST_STRING kHelpTextInterface = "";
+CONST_STRING kHelpTextInterface = "On each turn, move a piece (orthogonally or diagonally) to an empty spot one tile away.\nYou may jump over an enemy counter (no jumps over your own counters), landing on an empty spot two tiles away.\nEvery move/jump must be forwards or sideways relative to your side, never backwards.";
 
-CONST_STRING kHelpOnYourTurn = "Please enter your move in the format 0-4,0-4";
+CONST_STRING kHelpOnYourTurn = "Make your move using two lowercase letters from a-p, following the legend: <from_index><to_index>";
 
-CONST_STRING kHelpStandardObjective = "Slide your pieces along the lines to prevent your opponent from moving.";
+CONST_STRING kHelpStandardObjective = "Be the first to place all of your pieces in the two rows opposite from where they started.";
 
-CONST_STRING kHelpReverseObjective = "";
+CONST_STRING kHelpReverseObjective = "No reverse objective yet.";
 
-CONST_STRING kHelpTieOccursWhen = /* Should follow 'A Tie occurs when... */ "";
+CONST_STRING kHelpTieOccursWhen = "Ties are not possible here.";
 
-CONST_STRING kHelpExample = "";
+CONST_STRING kHelpExample = "https://sites.google.com/site/boardandpieces/list-of-games/le-grec";
 
 /*************************************************************************
 **
@@ -86,7 +86,7 @@ void InitializeGame()
   char start[] = "XXXX XXXOOO OOOO";
   gInitialPosition = generic_hash_hash(start, 1);
   /* This game is the same game as Blocking and is known to be pure draw. */
-  kUsePureDraw = FALSE; // @all, unsure if this game is a pure draw, leave at false for the time being, but please read about pure draws in https://nyc.cs.berkeley.edu/uni/games/0to10by1or2/variants/regular go to the 'i' symbol on top of the vvh.
+  kUsePureDraw = FALSE;
 }
 
 /************************************************************************
@@ -181,7 +181,11 @@ void UndoMove(MOVE move)
 void PrintComputersMove(MOVE computersMove, STRING computersName) {
   int start = DECODE_MOVE_START(computersMove);
   int end = DECODE_MOVE_END(computersMove);
-  printf("%s moved: %d, %d\n", computersName, start, end);
+
+  char start_char = (char)('a' + start);
+  char end_char = (char)('a' + end);
+
+  printf("%s moved: %c %c\n", computersName, start_char, end_char);
 }
 
 /************************************************************************
@@ -211,7 +215,7 @@ VALUE Primitive(POSITION position)
 {
     char board[BOARD_SIZE];
     generic_hash_unhash(position, board);
-    int player = generic_hash_turn(position);
+    char player = playerPiece[generic_hash_turn(position)];
 
     int x_count = 0;
     for (int i = 8; i < 16; i++) {
@@ -226,14 +230,13 @@ VALUE Primitive(POSITION position)
         }
     }
     
-    if (x_count == 7) {
+    if (player == 'O' && x_count == 7) {
         return lose;
-    } else if (o_count == 7) {
+    } else if (player == 'X' && o_count == 7) {
         return lose;
     } else {
         return undecided;
     }
-     
 }
 
 /************************************************************************
@@ -255,19 +258,13 @@ VALUE Primitive(POSITION position)
 
 void PrintPosition(POSITION position, STRING playerName, BOOLEAN usersTurn)
 {
-  (void)usersTurn;
   char board[BOARD_SIZE];
   generic_hash_unhash(position, board);
-  printf("\n");
-  printf("     a b c d  |  %c %c %c %c\n", board[0], board[1], board[2], board[3]);
-  printf("     e f g h  |  %c %c %c %c\n", board[4], board[5], board[6], board[7]);
-  printf("     i j k l  |  %c %c %c %c\n", board[8], board[9], board[10], board[11]);
-  printf("     m n o p  |  %c %c %c %c\n", board[12], board[13], board[14], board[15]);
-  printf("\n");
-  printf("It is %s's turn (%c).\n", playerName, playerPiece[generic_hash_turn(position)]);
-  printf("\n");
-  
-  // Dont forget to call GetPredictions() :) :D
+  printf("LEGEND: a b c d  |  BOARD: %c %c %c %c %s  |  \n", board[0], board[1], board[2], board[3], GetPrediction(position, playerName, usersTurn));
+  printf("        e f g h  |         %c %c %c %c  |\n", board[4], board[5], board[6], board[7]);
+  printf("        i j k l  |         %c %c %c %c  |\n", board[8], board[9], board[10], board[11]);
+  printf("        m n o p  |         %c %c %c %c  |\n", board[12], board[13], board[14], board[15]);
+  printf("\nIt is %s's turn (%c).\n\n", playerName, playerPiece[generic_hash_turn(position)]);
 }
 
 /************************************************************************
@@ -444,7 +441,7 @@ POSITION DoSymmetry(POSITION position, int symmetry) {
 USERINPUT GetAndPrintPlayersMove(POSITION thePosition, MOVE *theMove, STRING playerName) {
   USERINPUT ret = Continue;
   do {
-    printf("%s's move [<a-p> <a-p>] : ", playerName);
+    printf("%s's move [<a-p> <a-p>]: ", playerName);
 
     ret = HandleDefaultTextInput(thePosition, theMove, playerName);
   } while (ret == Continue);
@@ -561,9 +558,15 @@ void PrintMove(MOVE move)
 **
 ************************************************************************/
 
-void MoveToString (MOVE move, char *moveStringBuffer)
+void MoveToString(MOVE move, char *moveStringBuffer)
 {
-  snprintf(moveStringBuffer, MAX_MOVE_STRING_SIZE, "%u %u", DECODE_MOVE_START(move), DECODE_MOVE_END(move));
+  int start = DECODE_MOVE_START(move);
+  int end = DECODE_MOVE_END(move);
+
+  char start_char = (char)('a' + start);
+  char end_char = (char)('a' + end);
+
+  snprintf(moveStringBuffer, MAX_MOVE_STRING_SIZE, "%c %c", start_char, end_char);
 }
 
 CONST_STRING kDBName = "legrec";
@@ -588,7 +591,6 @@ POSITION ActualNumberOfPositions(int variant)
   (void)variant;
   return 0;
 }
-
 
 POSITION StringToPosition(char *positionString) {
 	(void) positionString;
