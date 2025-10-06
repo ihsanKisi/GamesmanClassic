@@ -4,7 +4,7 @@
 **
 ** DESCRIPTION: Le Grec
 **
-** AUTHOR:      Josh Z, Nahee J, Ihsan K, Shaheer B
+** AUTHOR:      "Ihsan Kisi, Shaheer Babar, Josh Zhang, Nahee Jeong"
 **
 **************************************************************************/
 
@@ -33,7 +33,7 @@ char playerPiece[] = " XO";
 POSITION gInitialPosition = 0;
 POSITION gMinimalPosition = 0;
 
-CONST_STRING kAuthorName = "Josh Z, Nahee J, Ihsan K, Shaheer B";
+CONST_STRING kAuthorName = "Ihsan Kisi, Shaheer Babar, Josh Zhang, Nahee Jeong";
 CONST_STRING kGameName = "Le Grec";
 BOOLEAN kPartizan = TRUE;
 BOOLEAN kDebugMenu = TRUE;
@@ -260,7 +260,7 @@ void PrintPosition(POSITION position, STRING playerName, BOOLEAN usersTurn)
 {
   char board[BOARD_SIZE];
   generic_hash_unhash(position, board);
-  printf("LEGEND: a b c d  |  BOARD: %c %c %c %c %s  |  \n", board[0], board[1], board[2], board[3], GetPrediction(position, playerName, usersTurn));
+  printf("\nLEGEND: a b c d  |  BOARD: %c %c %c %c  |  %s\n", board[0], board[1], board[2], board[3], GetPrediction(position, playerName, usersTurn));
   printf("        e f g h  |         %c %c %c %c  |\n", board[4], board[5], board[6], board[7]);
   printf("        i j k l  |         %c %c %c %c  |\n", board[8], board[9], board[10], board[11]);
   printf("        m n o p  |         %c %c %c %c  |\n", board[12], board[13], board[14], board[15]);
